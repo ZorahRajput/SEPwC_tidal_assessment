@@ -1,11 +1,40 @@
 #!/usr/bin/env python3
+"""
+Created on Mon May  5 14:35:48 2025
 
-# import the modules you need here
+@author: zorahrajput
+"""
+
 import argparse
+import pandas as pd
+import matplotlib.pyplot as plt
+import datetime
+import wget
+import os
+import numpy as np
+import uptide
+import pytz
+import math
 
-def read_tidal_data(filename):
+def read_tidal_data(tidal_file):
+    try:
+        data = pd.read_csv(
+            tidal_file,
+            skiprows=10,  # Skip the two header lines
+            delim_whitespace=True,  # Use whitespace as the delimiter
+            usecols=[1, 2, 3],      # Select the Date, Time, and ASLVZZ01 columns
+            names=['Date', 'Time', 'SeaLevel'], # Rename columns
+            dtype={'SeaLevel' : str}, # Read as a string to make conversion easier - Gemini used here
+            parse_dates={'Date': [0, 1]}, 
+            date_format='%Y/%m/%d %H:%M:%S',
+            converters={'Sea Level': lambda x: np.nan if 'M' in x else float(x)}
+            )
+        
+        data = data.set_index('Date')
+        return data
+    except FileNotFoundError:
+        raise FileNotFoundError(f"File not found: {tidal_file}")
 
-    return 0
     
 def extract_single_year_remove_mean(year, data):
    
