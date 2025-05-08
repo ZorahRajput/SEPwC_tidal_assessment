@@ -15,23 +15,26 @@ import numpy as np
 import uptide
 import pytz
 import math
+import glob
 
 def read_tidal_data(tidal_file):
     try:
         data = pd.read_csv(
             tidal_file,
-            skiprows=10,  # Skip the two header lines
-            delim_whitespace=True,  # Use whitespace as the delimiter
-            usecols=[1, 2, 3],      # Select the Date, Time, and ASLVZZ01 columns
-            names=['Date', 'Time', 'SeaLevel'], # Rename columns
-            dtype={'SeaLevel' : str}, # Read as a string to make conversion easier - Gemini used here
-            parse_dates={'Date': [0, 1]}, 
-            date_format='%Y/%m/%d %H:%M:%S',
-            converters={'Sea Level': lambda x: np.nan if 'M' in x else float(x)}
+            skiprows=11,  # Skip irrelevant lines
+            sep=r'\s+',
+            usecols=[1, 2, 3],
+            names=['DateStr', 'TimeStr', 'SeaLevelRaw'], 
+            dtype={'SeaLevelRaw' : str}, # Read as a string to make conversion easier - Gemini used 
             )
         
+        data['DateTime'] = data['DateStr'].str.replace('/', '-') + ' ' + data['TimeStr']
+        data['Date'] = pd.to_datetime(data['DateTime'], format='%Y-%m-%d %H:%M:%S')
         data = data.set_index('Date')
+        data['Sea Level'] = data['SeaLevelRaw'].apply(lambda x: np.nan if 'M' in x else pd.to_numeric(x, errors='coerce')) # Gemini used for lambda
+        data = data[['Sea Level']]
         return data
+        
     except FileNotFoundError:
         raise FileNotFoundError(f"File not found: {tidal_file}")
 
