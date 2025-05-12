@@ -21,6 +21,7 @@ def read_tidal_data(tidal_file):
     try:
         data = pd.read_csv(
             tidal_file,
+            header=None,
             skiprows=11,  # Skip irrelevant lines
             sep=r'\s+',
             usecols=[1, 2, 3],
@@ -28,10 +29,13 @@ def read_tidal_data(tidal_file):
             dtype={'SeaLevelRaw' : str}, # Read as a string to make conversion easier - Gemini used 
             )
         
+        data['Sea Level'] = data['SeaLevelRaw'].apply(
+        lambda x: np.nan if any(suffix in x for suffix in ['M', 'N', 'T']) #Gemini
+        else pd.to_numeric(x, errors='coerce')
+        ) 
         data['DateTime'] = data['DateStr'].str.replace('/', '-') + ' ' + data['TimeStr']
         data['Date'] = pd.to_datetime(data['DateTime'], format='%Y-%m-%d %H:%M:%S')
         data = data.set_index('Date')
-        data['Sea Level'] = data['SeaLevelRaw'].apply(lambda x: np.nan if 'M' in x else pd.to_numeric(x, errors='coerce')) # Gemini used for lambda
         data = data[['Sea Level']]
         return data
         
