@@ -56,9 +56,14 @@ def extract_single_year_remove_mean(year, data):
 
 
 def extract_section_remove_mean(start, end, data):
+    section_start = pd.to_datetime(f'{start} 00:00:00')
+    section_end = pd.to_datetime(f'{end} 23:00:00')
+    section_data = data.loc[section_start:section_end, ['Sea Level']]
+    
+    mmm = np.mean(section_data['Sea Level'])
+    section_data['Sea Level'] -= mmm
 
-
-    return 
+    return section_data 
 
 
 def join_data(data1, data2):
