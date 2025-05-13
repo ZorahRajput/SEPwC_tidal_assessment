@@ -44,9 +44,14 @@ def read_tidal_data(tidal_file):
 
     
 def extract_single_year_remove_mean(year, data):
-   
+    start_data = pd.to_datetime(f'{year}-01-01 00:00:00')
+    end_data = pd.to_datetime(f'{year}-12-31 23:00:00')
+    year_data = data.loc[start_data:end_data, ['Sea Level']]
+  
+    mmm = np.mean(year_data['Sea Level'])
+    year_data['Sea Level'] -= mmm
 
-    return 
+    return year_data 
 
 
 def extract_section_remove_mean(start, end, data):
