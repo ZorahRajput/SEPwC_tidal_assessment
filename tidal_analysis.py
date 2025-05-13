@@ -34,8 +34,10 @@ def read_tidal_data(tidal_file):
         else pd.to_numeric(x, errors='coerce')
         ) 
         data['DateTime'] = data['DateStr'].str.replace('/', '-') + ' ' + data['TimeStr']
-        data['Date'] = pd.to_datetime(data['DateTime'], format='%Y-%m-%d %H:%M:%S')
-        data = data.set_index('Date')
+        data = data.rename(columns={'DateStr' : 'Date', 'TimeStr' : 'Time'})
+        data['DateTime'] = pd.to_datetime(data['DateTime'], format='%Y-%m-%d %H:%M:%S')
+        data = data.set_index('DateTime')
+        data = data.drop(columns=['SeaLevelRaw']) 
         return data
         
     except FileNotFoundError:
