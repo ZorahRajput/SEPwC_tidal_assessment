@@ -52,7 +52,7 @@ def extract_single_year_remove_mean(year, data):
     mmm = np.mean(year_data['Sea Level'])
     year_data['Sea Level'] -= mmm
 
-    return year_data 
+    return year_data
 
 
 def extract_section_remove_mean(start, end, data):
