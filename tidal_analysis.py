@@ -8,6 +8,7 @@ Created on Mon May  5 14:35:48 2025
 import argparse
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 import datetime
 import wget
 import os
@@ -42,7 +43,7 @@ def read_tidal_data(tidal_file):
         
     except FileNotFoundError:
         raise FileNotFoundError(f"File not found: {tidal_file}")
-
+      
     
 def extract_single_year_remove_mean(year, data):
     start_data = pd.to_datetime(f'{year}-01-01 00:00:00')
@@ -58,12 +59,13 @@ def extract_single_year_remove_mean(year, data):
 def extract_section_remove_mean(start, end, data):
     section_start = pd.to_datetime(f'{start} 00:00:00')
     section_end = pd.to_datetime(f'{end} 23:00:00')
-    section_data = data.loc[section_start:section_end, ['Sea Level']]
-    
-    mmm = np.mean(section_data['Sea Level'])
+    section_data = data.loc[section_start:section_end, ['Sea Level']].copy()
+
+    section_data['Sea Level'] = section_data['Sea Level'].interpolate(method='linear', limit_direction='both', limit_area='inside')
+    mmm = section_data['Sea Level'].mean()
     section_data['Sea Level'] -= mmm
 
-    return section_data 
+    return section_data
 
 
 def join_data(data1, data2):
@@ -73,16 +75,21 @@ def join_data(data1, data2):
     return sorted_data
 
 
-
 def sea_level_rise(data):
 
-                                                     
-    return 
+    return
 
 def tidal_analysis(data, constituents, start_datetime):
+    constituents = ['M2', 'S2', 'N2', 'K2', 'O1', 'K1', 'P1', 'Q1']
+    tidal_elevations = data['Sea Level'].to_numpy()
+    tide = uptide.Tides(constituents)
 
-
-    return 
+    tide.set_initial_time(start_datetime)
+    seconds_since = (data.index.astype('int64').to_numpy()/1e9) - start_datetime.timestamp()
+    
+    # return amplitudes and phases
+    amp, pha = uptide.harmonic_analysis(tide, tidal_elevations, seconds_since)
+    return amp, pha
 
 def get_longest_contiguous_data(data):
 
@@ -94,7 +101,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
                      prog="UK Tidal analysis",
                      description="Calculate tidal constiuents and RSL from tide gauge data",
-                     epilog="Copyright 2024, Jon Hill"
+                     epilog="Copyright 2025, Zorah Rajput"
                      )
 
     parser.add_argument("directory",
