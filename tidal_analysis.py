@@ -1,7 +1,23 @@
 #!/usr/bin/env python3
+"""
+Created on Mon May  5 14:35:48 2025
 
-# import the modules you need here
+@author: zorahrajput
+"""
+# Import modules
 import argparse
+import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import datetime
+import wget
+import os
+import numpy as np
+import uptide
+import pytz
+import math
+import glob
+from scipy import stats
 
 def read_tidal_data(filename):
 
@@ -45,7 +61,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
                      prog="UK Tidal analysis",
                      description="Calculate tidal constiuents and RSL from tide gauge data",
-                     epilog="Copyright 2024, Jon Hill"
+                     epilog="Copyright 2025, Zorah Rajput"
                      )
 
     parser.add_argument("directory",
