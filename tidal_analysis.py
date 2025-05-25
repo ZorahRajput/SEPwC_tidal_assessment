@@ -19,9 +19,53 @@ import math
 import glob
 from scipy import stats
 
-def read_tidal_data(filename):
+def read_tidal_data(tidal_file):
+    try:
+        # Use only relevant rows
+        data = pd.read_csv(
+            tidal_file,
+            header=None,
+            skiprows=11,  
+            sep=r'\s+',
+            usecols=[1, 2, 3],
+            names=['DateStr', 'TimeStr', 'SeaLevelRaw'], 
+            dtype={'SeaLevelRaw' : str}, 
+            )
+        
+        # Replace invalid data with NaN 
+        suffixes_to_remove = ['M', 'N', 'T']
+        pattern = r'\s*(' + '|'.join(suffixes_to_remove) + r')$'
 
-    return 0
+        data['Sea Level'] = pd.to_numeric(
+            data['SeaLevelRaw'].str.replace(pattern, '', regex=True),
+            errors='coerce' 
+            )
+        # Gemini - Suggestion to remove "bad numbers"
+        data['Sea Level'] = data['Sea Level'].replace(-99.0000, np.nan) 
+
+        # Use only relevant columns in the correct format 
+        data['DateTime'] = data['DateStr'].str.replace('/', '-') + ' ' + data['TimeStr']
+        data = data.rename(columns={'DateStr' : 'Date', 'TimeStr' : 'Time'})
+        data['DateTime'] = pd.to_datetime(data['DateTime'], format='%Y-%m-%d %H:%M:%S')
+        data = data.set_index('DateTime')
+        data = data.drop(columns=['SeaLevelRaw']) 
+        return data
+    
+    # Handle potential errors
+    except FileNotFoundError:
+        raise FileNotFoundError(f"File not found: {tidal_file}")
+        
+    except pd.errors.ParserError:
+        print(f"Error parsing CSV file '{tidal_file}'")
+        return pd.DataFrame()
+
+    except KeyError:
+        print(f"Error: Missing expected column in '{tidal_file}'")
+        return pd.DataFrame()
+
+    except ValueError:
+        print(f"Error: Data conversion failed in '{tidal_file}'")
+        return pd.DataFrame()
     
 def extract_single_year_remove_mean(year, data):
    
