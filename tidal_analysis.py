@@ -24,7 +24,7 @@ and converts relevant columns to datetime objects.
 """
     try:
         # Use only relevant rows
-        data = pd.read_csv(
+        dat = pd.read_csv(
             tidal_file,
             header=None,
             skiprows=11,
@@ -38,20 +38,20 @@ and converts relevant columns to datetime objects.
         suffixes_to_remove = ['M', 'N', 'T']
         pattern = r'\s*(' + '|'.join(suffixes_to_remove) + r')$'
 
-        data['Sea Level'] = pd.to_numeric(
-            data['SeaLevelRaw'].str.replace(pattern, '', regex=True),
+        dat['Sea Level'] = pd.to_numeric(
+            dat['SeaLevelRaw'].str.replace(pattern, '', regex=True),
             errors='coerce'
             )
         # Gemini - Suggestion to remove "bad numbers"
-        data['Sea Level'] = data['Sea Level'].replace(-99.0000, np.nan)
+        dat['Sea Level'] = dat['Sea Level'].replace(-99.0000, np.nan)
 
         # Use only relevant columns in the correct format
-        data['DateTime'] = data['DateStr'].str.replace('/', '-') + ' ' + data['TimeStr']
-        data = data.rename(columns={'DateStr' : 'Date', 'TimeStr' : 'Time'})
-        data['DateTime'] = pd.to_datetime(data['DateTime'], format='%Y-%m-%d %H:%M:%S')
-        data = data.set_index('DateTime')
-        data = data.drop(columns=['SeaLevelRaw'])
-        return data
+        dat['DateTime'] = dat['DateStr'].str.replace('/', '-') + ' ' + dat['TimeStr']
+        dat = dat.rename(columns={'DateStr' : 'Date', 'TimeStr' : 'Time'})
+        dat['DateTime'] = pd.to_datetime(dat['DateTime'], format='%Y-%m-%d %H:%M:%S')
+        dat = dat.set_index('DateTime')
+        dat = dat.drop(columns=['SeaLevelRaw'])
+        return dat
 
     # Handle potential errors
     except FileNotFoundError:
@@ -83,26 +83,26 @@ empty DataFrame, and removes the mean from the data.
         DESCRIPTION.
 
     """
-    start_data = pd.to_datetime(f'{year}-01-01 00:00:00')
-    end_data = pd.to_datetime(f'{year}-12-31 23:00:00')
-    year_data = data.loc[start_data:end_data, ['Sea Level']]
+    start_dat = pd.to_datetime(f'{year}-01-01 00:00:00')
+    end_dat = pd.to_datetime(f'{year}-12-31 23:00:00')
+    year_dat = data.loc[start_dat:end_dat, ['Sea Level']]
 
     # Handle potential extraction errors
-    if year_data.empty:
+    if year_dat.empty:
         print(f"Warning: No data found for '{year}'.")
         return pd.DataFrame()
 
-        sea_level_series = year_data['Sea Level'].dropna()
+        sea_level_series = year_dat['Sea Level'].dropna()
 
         if sea_level_series.empty:
             print(f"Warning: No valid 'Sea Level' data found for {year} after dropping NaNs.")
             return pd.DataFrame()
 
     # Calculate and remove mean
-    mmm = np.mean(year_data['Sea Level'])
-    year_data['Sea Level'] -= mmm
+    mmm = np.mean(year_dat['Sea Level'])
+    year_dat['Sea Level'] -= mmm
 
-    return year_data
+    return year_dat
 
 
 def extract_section_remove_mean(start, end, data):
@@ -223,8 +223,8 @@ This function returns the amplitude and phase data which is calculated.
     seconds_since = (data.index.astype('int64').to_numpy()/1e9) - start_datetime.timestamp()
 
     # Harmonic analysis
-    amp, pha = uptide.harmonic_analysis(tide, tidal_elevations, seconds_since)
-    return amp, pha
+    amplitude, phase = uptide.harmonic_analysis(tide, tidal_elevations, seconds_since)
+    return amplitude, phase
 
 def get_longest_contiguous_data(data):
     """
