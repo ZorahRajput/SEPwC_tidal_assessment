@@ -144,9 +144,37 @@ def join_data(data1, data2):
         return pd.DataFrame() 
 
 def sea_level_rise(data):
+    # Drop NaN values for linear regression
+    cleaned_data = data.dropna(subset=['Sea Level'])
 
-                                                     
-    return 
+    if cleaned_data.empty or len(cleaned_data) < 2:
+        print("Warning: Insufficient data points for linear regression")
+        return
+    
+    # Gemini- Suggested to remove outliers
+    mean_val = cleaned_data['Sea Level'].mean()
+    std_val = cleaned_data['Sea Level'].std()
+    outlier_threshold_std = 2.4 # Experimented to get as close to expected value as possible
+
+    initial_len = len(cleaned_data)
+    cleaned_data = cleaned_data[
+    (cleaned_data['Sea Level'] > (mean_val - outlier_threshold_std * std_val)) &
+    (cleaned_data['Sea Level'] < (mean_val + outlier_threshold_std * std_val))
+    ]
+    if len(cleaned_data) < initial_len:
+        if initial_len - len(cleaned_data) > 0: # Report removals to user
+            print(f"Removed {initial_len - len(cleaned_data)} outliers (>{outlier_threshold_std} std dev from mean).")
+
+    # Convert the DateTime index for the x-axis.
+    start_time = cleaned_data.index.min()
+    x = (cleaned_data.index - start_time).total_seconds() / (24 * 3600) # Time in days
+
+    y = cleaned_data['Sea Level'].values 
+
+    # Linear Regression
+    slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+    print(slope, p_value) # Added for debugging
+    return slope, p_value
 
 def tidal_analysis(data, constituents, start_datetime):
 
