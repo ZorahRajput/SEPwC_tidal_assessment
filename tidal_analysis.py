@@ -114,7 +114,7 @@ def extract_section_remove_mean(start, end, data):
 
     # Error Handling
     except 'Sea Level' not in data.columns:
-        print(f"Error: 'Sea Level' column not found when trying to extract section {start} to {end}.")
+        print(f"Error: 'Sea Level' column not found in section {start} to {end}.")
         return pd.DataFrame()
 
     except section_data.empty:
@@ -131,7 +131,7 @@ def extract_section_remove_mean(start, end, data):
 
 def join_data(data1, data2):
     if not isinstance(data1, pd.DataFrame) or not isinstance(data2, pd.DataFrame):
-        print(f"Error: Both inputs must be pandas DataFrames for join_data. Got types: {type(data1)}, {type(data2)}")
+        print(f"Error: Both inputs must be pandas DataFrames. Types: {type(data1)}, {type(data2)}")
         return pd.DataFrame()
 
     try:
@@ -163,7 +163,7 @@ def sea_level_rise(data):
     ]
     if len(cleaned_data) < initial_len:
         if initial_len - len(cleaned_data) > 0: # Report removals to user
-            print(f"Removed {initial_len - len(cleaned_data)} outliers (>{outlier_threshold_std} std dev from mean).")
+            print(f"Removed {initial_len - len(cleaned_data)} outliers.")
 
     # Convert the DateTime index for the x-axis.
     start_time = cleaned_data.index.min()
@@ -262,9 +262,9 @@ if __name__ == '__main__':
 
     if verbose:
         print(f"\nSuccessfully combined data from {len(all_data_frames)} files.")
-        print(f"Combined data shape: {combined_data.shape}")
-        print(f"Combined data time range: {combined_data.index.min()} to {combined_data.index.max()}")
-        print(f"Number of NaNs in 'Sea Level' before regression: {combined_data['Sea Level'].isna().sum()}")
+        print(f"Combined shape: {combined_data.shape}")
+        print(f"Combined time range: {combined_data.index.min()} to {combined_data.index.max()}")
+        print(f"Number of NaNs before regression: {combined_data['Sea Level'].isna().sum()}")
 
 
     # Sea Level Rise output
@@ -293,7 +293,11 @@ if __name__ == '__main__':
 
         analysis_start_datetime = longest_contiguous_block.index.min()
         try:
-            amp, pha = tidal_analysis(longest_contiguous_block, constituents_for_analysis, analysis_start_datetime)
+            amp, pha = tidal_analysis(
+                longest_contiguous_block,
+                constituents_for_analysis, 
+                analysis_start_datetime
+                )
 
             # Print tidal analysis results if verbose is true
             if verbose:
@@ -305,4 +309,4 @@ if __name__ == '__main__':
         except Exception as e:
             print(f"Error during tidal analysis: {e}")
             if verbose:
-                print("Tidal analysis failed. Ensure 'uptide' is correctly installed and data is suitable.") # Gemini used
+                print(f"Tidal analysis failed. {e}") # Gemini used
