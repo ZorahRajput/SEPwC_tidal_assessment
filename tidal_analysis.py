@@ -11,7 +11,7 @@ import glob
 import pandas as pd
 import numpy as np
 import uptide
-
+import sys
 from scipy import stats
 
 def read_tidal_data(tidal_file):
@@ -225,7 +225,7 @@ if __name__ == '__main__':
 
     if not file_paths:
         print(f"Error: No .txt files found in the directory: {dirname}")
-        exit(1)
+        sys.exit(1)
 
     for file_path in file_paths:
         if verbose:
@@ -246,14 +246,14 @@ if __name__ == '__main__':
 
     if not all_data_frames:
         print("Error: No valid data could be read from any files in the directory.")
-        exit(1)
+        sys.exit(1)
 
     # Join and sort data ouput
     combined_data = pd.concat(all_data_frames).sort_index(ascending=True)
 
     if combined_data.empty:
         print("Error: Combined data is empty after reading and joining files.")
-        exit(1)
+        sys.exit(1)
 
     if verbose:
         print(f"\nSuccessfully combined data from {len(all_data_frames)} files.")
