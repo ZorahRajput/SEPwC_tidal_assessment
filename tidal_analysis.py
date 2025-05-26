@@ -54,8 +54,8 @@ and converts relevant columns to datetime objects.
         return dat
 
     # Handle potential errors
-    except FileNotFoundError:
-        raise FileNotFoundError(f"File not found: {tidal_file}")
+    except FileNotFoundError as exc:
+        raise FileNotFoundError(f"File not found: {tidal_file}") from exc
 
     except pd.errors.ParserError:
         print(f"Error parsing CSV file '{tidal_file}'")
@@ -86,17 +86,15 @@ empty DataFrame, and removes the mean from the data.
     start_dat = pd.to_datetime(f'{year}-01-01 00:00:00')
     end_dat = pd.to_datetime(f'{year}-12-31 23:00:00')
     year_dat = data.loc[start_dat:end_dat, ['Sea Level']]
-
+    sea_level_series = year_dat['Sea Level'].dropna()
     # Handle potential extraction errors
     if year_dat.empty:
         print(f"Warning: No data found for '{year}'.")
         return pd.DataFrame()
 
-        sea_level_series = year_dat['Sea Level'].dropna()
-
-        if sea_level_series.empty:
-            print(f"Warning: No valid 'Sea Level' data found for {year} after dropping NaNs.")
-            return pd.DataFrame()
+    if sea_level_series.empty:
+        print(f"Warning: No valid 'Sea Level' data found for {year} after dropping NaNs.")
+        return pd.DataFrame()
 
     # Calculate and remove mean
     mmm = np.mean(year_dat['Sea Level'])
@@ -125,20 +123,16 @@ empty pandas DataFrame, and removes the mean from the data.
             method='linear', limit_direction='both', limit_area='inside'
         )
 
-        # Ensure there's data after interpolation, then remove mean
-        if not section_data['Sea Level'].empty and section_data['Sea Level'].notna().any():
-            mmm = np.mean(section_data['Sea Level'])
-            section_data['Sea Level'] -= mmm
-        else:
-            print(f"Warning: No valid data in section {start} to {end}")
+        if section_data.empty: # This is a more appropriate check for 'no data found'
+            print(f"Warning: No data found for section from {start} to {end}.")
+            return pd.DataFrame()
+
+        mmm = np.mean(section_data['Sea Level'])
+        section_data['Sea Level'] -= mmm
 
         return section_data
 
     # Error Handling
-    except 'Sea Level' not in data.columns:
-        print(f"Error: 'Sea Level' column not found in section {start} to {end}.")
-        return pd.DataFrame()
-
     except section_data.empty:
         print(f"Warning: No data found for section from {start} to {end}.")
         return pd.DataFrame()
@@ -178,7 +172,7 @@ This function handles potential issues and reports to the user.
 
     if cleaned_data.empty or len(cleaned_data) < 2:
         print("Warning: Insufficient data points for linear regression")
-        return
+        return pd.DataFrame()
 
     # Gemini- Suggested to remove outliers
     mean_val = cleaned_data['Sea Level'].mean()
@@ -265,6 +259,7 @@ if __name__ == '__main__':
     verbose = args.verbose
 
     # Read file output
+    master_data = pd.DataFrame() # Initialize as an empty DataFrame
     all_data_frames = [] # Hold data from all text files in a list
     file_paths = glob.glob(os.path.join(dirname, "*.txt"))
 
@@ -277,9 +272,9 @@ if __name__ == '__main__':
             print(f"Attempting to read data from: {file_path}")
 
         try:
-            data = read_tidal_data(file_path)
-            if not data.empty:
-                all_data_frames.append(data)
+            master_data = read_tidal_data(file_path)
+            if not master_data.empty:
+                all_data_frames.append(master_data)
             else:
                 if verbose:
                     print(f"Skipping empty or invalid data from: {file_path}")
@@ -291,24 +286,23 @@ if __name__ == '__main__':
         sys.exit(1)
 
     # Join and sort data ouput
-    combined_data = pd.concat(all_data_frames).sort_index(ascending=True)
+    master_combined_data = pd.concat(all_data_frames).sort_index(ascending=True)
 
-    if combined_data.empty:
+    if master_combined_data.empty:
         print("Error: Combined data is empty after reading and joining files.")
         sys.exit(1)
 
     if verbose:
         print(f"\nSuccessfully combined data from {len(all_data_frames)} files.")
-        print(f"Combined shape: {combined_data.shape}")
-        print(f"Combined time range: {combined_data.index.min()} to {combined_data.index.max()}")
-        print(f"Number of NaNs before regression: {combined_data['Sea Level'].isna().sum()}")
+        print(f"Combined shape: {master_combined_data.shape}")
+        print(f"Number of NaNs before regression: {master_combined_data['Sea Level'].isna().sum()}")
 
 
     # Sea Level Rise output
     if verbose:
         print("\n--- Calculating Sea Level Rise ---")
 
-    slope_rsl, p_value_rsl = sea_level_rise(combined_data)
+    slope_rsl, p_value_rsl = sea_level_rise(master_combined_data)
 
     # Print RSL results for the regression tests (> 25 characters)
     print(f"RSL Slope: {slope_rsl:.6e}, P-value: {p_value_rsl:.6f}")
@@ -321,7 +315,7 @@ if __name__ == '__main__':
     if verbose:
         print("\n--- Performing Tidal Analysis ---")
 
-    longest_contiguous_block = get_longest_contiguous_data(combined_data)
+    longest_contiguous_block = get_longest_contiguous_data(master_combined_data)
 
     if longest_contiguous_block.empty:
         print("Warning: Could not find a longest contiguous block for tidal analysis. Skipping.")
