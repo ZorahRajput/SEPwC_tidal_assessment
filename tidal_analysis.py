@@ -68,9 +68,26 @@ def read_tidal_data(tidal_file):
         return pd.DataFrame()
     
 def extract_single_year_remove_mean(year, data):
-   
+    start_data = pd.to_datetime(f'{year}-01-01 00:00:00')
+    end_data = pd.to_datetime(f'{year}-12-31 23:00:00')
+    year_data = data.loc[start_data:end_data, ['Sea Level']]
+  
+    # Handle potential extraction errors
+    if year_data.empty:
+        print(f"Warning: No data found for '{year}'.")
+        return pd.DataFrame()
 
-    return 
+        sea_level_series = year_data['Sea Level'].dropna()
+
+        if sea_level_series.empty:
+            print(f"Warning: No valid 'Sea Level' data found for {year} after dropping NaNs.")
+            return pd.DataFrame()  
+  
+    # Calculate and remove mean
+    mmm = np.mean(year_data['Sea Level'])
+    year_data['Sea Level'] -= mmm
+
+    return year_data
 
 
 def extract_section_remove_mean(start, end, data):
