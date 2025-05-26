@@ -7,14 +7,21 @@ Created on Mon May  5 14:35:48 2025
 # Import modules
 import argparse
 import os
+import sys
 import glob
 import pandas as pd
 import numpy as np
 import uptide
-import sys
 from scipy import stats
 
 def read_tidal_data(tidal_file):
+    """
+Reads tidal data from a specified file, cleans it, and prepares it for analysis.
+
+This function expects a whitespace-separated file, skips initial rows,
+handles specific 'M', 'N', 'T' suffixes, converts 'bad numbers' like -99.0000 to NaN,
+and converts relevant columns to datetime objects.
+"""
     try:
         # Use only relevant rows
         data = pd.read_csv(
@@ -63,6 +70,19 @@ def read_tidal_data(tidal_file):
         return pd.DataFrame()
 
 def extract_single_year_remove_mean(year, data):
+    """
+Extracts all data from a file for the specified year.
+    
+This function extracts data from midnight on the first day of the year
+to 11pm on the final day of the year, handles potential errors by returning an
+empty DataFrame, and removes the mean from the data.
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+
+    """
     start_data = pd.to_datetime(f'{year}-01-01 00:00:00')
     end_data = pd.to_datetime(f'{year}-12-31 23:00:00')
     year_data = data.loc[start_data:end_data, ['Sea Level']]
@@ -86,6 +106,13 @@ def extract_single_year_remove_mean(year, data):
 
 
 def extract_section_remove_mean(start, end, data):
+    """
+Extracts all data from a file for the specified timeframe.
+
+This function extracts data from midnight on the specified start date to
+11pm on the specified end date, handles potential errors by returning an 
+empty pandas DataFrame, and removes the mean from the data.
+"""
     try:
         # Convert date strings to datetime objects
         section_start = pd.to_datetime(f'{start} 00:00:00')
@@ -125,6 +152,11 @@ def extract_section_remove_mean(start, end, data):
         return pd.DataFrame()
 
 def join_data(data1, data2):
+    """
+Joins data from two specified files and sorts the index chronologically.
+
+This function handles potential errors by returning an empty pandas DataFrame.
+"""
     if not isinstance(data1, pd.DataFrame) or not isinstance(data2, pd.DataFrame):
         print(f"Error: Both inputs must be pandas DataFrames. Types: {type(data1)}, {type(data2)}")
         return pd.DataFrame()
@@ -139,6 +171,12 @@ def join_data(data1, data2):
         return pd.DataFrame()
 
 def sea_level_rise(data):
+    """
+Cleans data by removing NaN values, removes outliers, converts the DateTime index
+into seconds, and calculates a linear regression. 
+
+This function handles potential issues and reports to the user.
+"""
     # Drop NaN values for linear regression
     cleaned_data = data.dropna(subset=['Sea Level'])
 
@@ -172,6 +210,11 @@ def sea_level_rise(data):
     return slope, p_value
 
 def tidal_analysis(data, constituents, start_datetime):
+    """
+Converts 'Sea Level' data into an array to perform a harmonic analysis. 
+
+This function returns the amplitude and phase data which is calculated.
+"""
     # Convert data into an array
     tidal_elevations = data['Sea Level'].to_numpy()
     tide = uptide.Tides(constituents)
@@ -184,6 +227,12 @@ def tidal_analysis(data, constituents, start_datetime):
     return amp, pha
 
 def get_longest_contiguous_data(data):
+    """
+Sorts data into valid and missing data, finds the longest section of valid data, 
+and returns this to the user.
+
+This function handles errors related to an empty DataFrame.
+"""
     # Assign boolean values to valid and missing data
     not_na = data['Sea Level'].notna()
     group_ids = (not_na != not_na.shift()).cumsum()
@@ -290,7 +339,7 @@ if __name__ == '__main__':
         try:
             amp, pha = tidal_analysis(
                 longest_contiguous_block,
-                constituents_for_analysis, 
+                constituents_for_analysis,
                 analysis_start_datetime
                 )
 
