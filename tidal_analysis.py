@@ -91,10 +91,43 @@ def extract_single_year_remove_mean(year, data):
 
 
 def extract_section_remove_mean(start, end, data):
+    try:
+        # Convert date strings to datetime objects
+        section_start = pd.to_datetime(f'{start} 00:00:00')
+        section_end = pd.to_datetime(f'{end} 23:59:59')
 
+        section_data = data.loc[section_start:section_end, ['Sea Level']].copy()
 
-    return 
+        # Interpolate missing values
+        section_data['Sea Level'] = section_data['Sea Level'].interpolate(
+            method='linear', limit_direction='both', limit_area='inside'
+        )
 
+        # Ensure there's data after interpolation, then remove mean
+        if not section_data['Sea Level'].empty and section_data['Sea Level'].notna().any():
+            mmm = np.mean(section_data['Sea Level'])
+            section_data['Sea Level'] -= mmm
+        else: 
+            print(f"Warning: No valid data in section {start} to {end}")
+
+        return section_data
+
+    # Error Handling
+    except 'Sea Level' not in data.columns:
+        print(f"Error: 'Sea Level' column not found when trying to extract section {start} to {end}.")
+        return pd.DataFrame()
+
+    except section_data.empty:
+        print(f"Warning: No data found for section from {start} to {end}.")
+        return pd.DataFrame()
+    
+    except ValueError:
+        print(f"Error: Invalid date format in {start} or {end}")
+        return pd.DataFrame()
+    
+    except Exception:
+        print(f"An unexpected error occurred while extracting data from {start} to {end}")
+        return pd.DataFrame()
 
 def join_data(data1, data2):
     if not isinstance(data1, pd.DataFrame) or not isinstance(data2, pd.DataFrame):
