@@ -25,36 +25,36 @@ def read_tidal_data(tidal_file):
         data = pd.read_csv(
             tidal_file,
             header=None,
-            skiprows=11,  
+            skiprows=11,
             sep=r'\s+',
             usecols=[1, 2, 3],
-            names=['DateStr', 'TimeStr', 'SeaLevelRaw'], 
-            dtype={'SeaLevelRaw' : str}, 
+            names=['DateStr', 'TimeStr', 'SeaLevelRaw'],
+            dtype={'SeaLevelRaw' : str},
             )
-        
-        # Replace invalid data with NaN 
+
+        # Replace invalid data with NaN
         suffixes_to_remove = ['M', 'N', 'T']
         pattern = r'\s*(' + '|'.join(suffixes_to_remove) + r')$'
 
         data['Sea Level'] = pd.to_numeric(
             data['SeaLevelRaw'].str.replace(pattern, '', regex=True),
-            errors='coerce' 
+            errors='coerce'
             )
         # Gemini - Suggestion to remove "bad numbers"
-        data['Sea Level'] = data['Sea Level'].replace(-99.0000, np.nan) 
+        data['Sea Level'] = data['Sea Level'].replace(-99.0000, np.nan)
 
-        # Use only relevant columns in the correct format 
+        # Use only relevant columns in the correct format
         data['DateTime'] = data['DateStr'].str.replace('/', '-') + ' ' + data['TimeStr']
         data = data.rename(columns={'DateStr' : 'Date', 'TimeStr' : 'Time'})
         data['DateTime'] = pd.to_datetime(data['DateTime'], format='%Y-%m-%d %H:%M:%S')
         data = data.set_index('DateTime')
-        data = data.drop(columns=['SeaLevelRaw']) 
+        data = data.drop(columns=['SeaLevelRaw'])
         return data
-    
+
     # Handle potential errors
     except FileNotFoundError:
         raise FileNotFoundError(f"File not found: {tidal_file}")
-        
+
     except pd.errors.ParserError:
         print(f"Error parsing CSV file '{tidal_file}'")
         return pd.DataFrame()
@@ -66,12 +66,12 @@ def read_tidal_data(tidal_file):
     except ValueError:
         print(f"Error: Data conversion failed in '{tidal_file}'")
         return pd.DataFrame()
-    
+ 
 def extract_single_year_remove_mean(year, data):
     start_data = pd.to_datetime(f'{year}-01-01 00:00:00')
     end_data = pd.to_datetime(f'{year}-12-31 23:00:00')
     year_data = data.loc[start_data:end_data, ['Sea Level']]
-  
+
     # Handle potential extraction errors
     if year_data.empty:
         print(f"Warning: No data found for '{year}'.")
@@ -81,8 +81,8 @@ def extract_single_year_remove_mean(year, data):
 
         if sea_level_series.empty:
             print(f"Warning: No valid 'Sea Level' data found for {year} after dropping NaNs.")
-            return pd.DataFrame()  
-  
+            return pd.DataFrame()
+
     # Calculate and remove mean
     mmm = np.mean(year_data['Sea Level'])
     year_data['Sea Level'] -= mmm
@@ -107,7 +107,7 @@ def extract_section_remove_mean(start, end, data):
         if not section_data['Sea Level'].empty and section_data['Sea Level'].notna().any():
             mmm = np.mean(section_data['Sea Level'])
             section_data['Sea Level'] -= mmm
-        else: 
+        else:
             print(f"Warning: No valid data in section {start} to {end}")
 
         return section_data
@@ -120,11 +120,11 @@ def extract_section_remove_mean(start, end, data):
     except section_data.empty:
         print(f"Warning: No data found for section from {start} to {end}.")
         return pd.DataFrame()
-    
+
     except ValueError:
         print(f"Error: Invalid date format in {start} or {end}")
         return pd.DataFrame()
-    
+
     except Exception:
         print(f"An unexpected error occurred while extracting data from {start} to {end}")
         return pd.DataFrame()
@@ -138,10 +138,10 @@ def join_data(data1, data2):
         combined_data = pd.concat([data1, data2])
         sorted_data = combined_data.sort_index(ascending=True)
         return sorted_data
-    
+   
     except Exception as e:
         print(f"An error occurred during data joining: {e}")
-        return pd.DataFrame() 
+        return pd.DataFrame()
 
 def sea_level_rise(data):
     # Drop NaN values for linear regression
@@ -150,7 +150,7 @@ def sea_level_rise(data):
     if cleaned_data.empty or len(cleaned_data) < 2:
         print("Warning: Insufficient data points for linear regression")
         return
-    
+
     # Gemini- Suggested to remove outliers
     mean_val = cleaned_data['Sea Level'].mean()
     std_val = cleaned_data['Sea Level'].std()
@@ -169,7 +169,7 @@ def sea_level_rise(data):
     start_time = cleaned_data.index.min()
     x = (cleaned_data.index - start_time).total_seconds() / (24 * 3600) # Time in days
 
-    y = cleaned_data['Sea Level'].values 
+    y = cleaned_data['Sea Level'].values
 
     # Linear Regression
     slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
@@ -193,11 +193,11 @@ def get_longest_contiguous_data(data):
     not_na = data['Sea Level'].notna()
     group_ids = (not_na != not_na.shift()).cumsum()
     contiguous_lengths = data[not_na].groupby(group_ids[not_na]).size()
-    
+
     if data.empty or 'Sea Level' not in data.columns:
-        return pd.DataFrame()   
+        return pd.DataFrame()
     if contiguous_lengths.empty:
-        return pd.DataFrame() 
+        return pd.DataFrame()
 
     # Find largest sequence of valid data
     longest_group_id = contiguous_lengths.idxmax()
@@ -223,7 +223,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     dirname = args.directory
     verbose = args.verbose
-    
+
     # Read file output
     all_data_frames = [] # Hold data from all text files in a list
     file_paths = glob.glob(os.path.join(dirname, "*.txt"))
@@ -235,7 +235,7 @@ if __name__ == '__main__':
     for file_path in file_paths:
         if verbose:
             print(f"Attempting to read data from: {file_path}")
-        
+
         try:
             data = read_tidal_data(file_path)
             if not data.empty:
@@ -270,12 +270,12 @@ if __name__ == '__main__':
     # Sea Level Rise output
     if verbose:
         print("\n--- Calculating Sea Level Rise ---")
-    
+
     slope_rsl, p_value_rsl = sea_level_rise(combined_data)
-    
+
     # Print RSL results for the regression tests (> 25 characters)
     print(f"RSL Slope: {slope_rsl:.6e}, P-value: {p_value_rsl:.6f}")
-    
+
     if verbose:
         print("Sea Level Rise calculation complete.")
 
@@ -283,7 +283,7 @@ if __name__ == '__main__':
     # Tidal Analysis output
     if verbose:
         print("\n--- Performing Tidal Analysis ---")
-    
+
     longest_contiguous_block = get_longest_contiguous_data(combined_data)
 
     if longest_contiguous_block.empty:
@@ -292,10 +292,10 @@ if __name__ == '__main__':
         constituents_for_analysis = ['M2', 'S2']
 
         analysis_start_datetime = longest_contiguous_block.index.min()
-        
+       
         try:
             amp, pha = tidal_analysis(longest_contiguous_block, constituents_for_analysis, analysis_start_datetime)
-            
+      
             # Print tidal analysis results if verbose is true
             if verbose:
                 print("\nTidal Constituents Amplitudes and Phases:")
@@ -306,7 +306,4 @@ if __name__ == '__main__':
         except Exception as e:
             print(f"Error during tidal analysis: {e}")
             if verbose:
-                print("Tidal analysis failed. Ensure 'uptide' is correctly installed and data is suitable.") # Gemini used
-    
-
-
+                print("Tidal analysis failed. Ensure 'uptide' is correctly installed and data is suitable.") # Gemini used  
