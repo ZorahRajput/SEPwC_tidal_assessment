@@ -196,5 +196,89 @@ if __name__ == '__main__':
     dirname = args.directory
     verbose = args.verbose
     
+    # Read file output
+    all_data_frames = [] # Hold data from all text files in a list
+    file_paths = glob.glob(os.path.join(dirname, "*.txt"))
+
+    if not file_paths:
+        print(f"Error: No .txt files found in the directory: {dirname}")
+        exit(1)
+
+    for file_path in file_paths:
+        if verbose:
+            print(f"Attempting to read data from: {file_path}")
+        
+        try:
+            data = read_tidal_data(file_path)
+            if not data.empty:
+                all_data_frames.append(data)
+            else:
+                if verbose:
+                    print(f"Skipping empty or invalid data from: {file_path}")
+        except FileNotFoundError as e:
+            print(f"Error: {e}")
+        except Exception as e:
+            if verbose:
+                print(f"An error occurred while processing {file_path}: {e}")
+
+    if not all_data_frames:
+        print("Error: No valid data could be read from any files in the directory.")
+        exit(1)
+
+    # Join and sort data ouput
+    combined_data = pd.concat(all_data_frames).sort_index(ascending=True)
+
+    if combined_data.empty:
+        print("Error: Combined data is empty after reading and joining files.")
+        exit(1)
+
+    if verbose:
+        print(f"\nSuccessfully combined data from {len(all_data_frames)} files.")
+        print(f"Combined data shape: {combined_data.shape}")
+        print(f"Combined data time range: {combined_data.index.min()} to {combined_data.index.max()}")
+        print(f"Number of NaNs in 'Sea Level' before regression: {combined_data['Sea Level'].isna().sum()}")
+
+
+    # Sea Level Rise output
+    if verbose:
+        print("\n--- Calculating Sea Level Rise ---")
+    
+    slope_rsl, p_value_rsl = sea_level_rise(combined_data)
+    
+    # Print RSL results for the regression tests (> 25 characters)
+    print(f"RSL Slope: {slope_rsl:.6e}, P-value: {p_value_rsl:.6f}")
+    
+    if verbose:
+        print("Sea Level Rise calculation complete.")
+
+
+    # Tidal Analysis output
+    if verbose:
+        print("\n--- Performing Tidal Analysis ---")
+    
+    longest_contiguous_block = get_longest_contiguous_data(combined_data)
+
+    if longest_contiguous_block.empty:
+        print("Warning: Could not find a longest contiguous block for tidal analysis. Skipping.")
+    else:
+        constituents_for_analysis = ['M2', 'S2']
+
+        analysis_start_datetime = longest_contiguous_block.index.min()
+        
+        try:
+            amp, pha = tidal_analysis(longest_contiguous_block, constituents_for_analysis, analysis_start_datetime)
+            
+            # Print tidal analysis results if verbose is true
+            if verbose:
+                print("\nTidal Constituents Amplitudes and Phases:")
+                for i, const in enumerate(constituents_for_analysis):
+                    print(f"  {const}: Amplitude={amp[i]:.4f}, Phase={pha[i]:.2f}")
+                    print(f"Tidal Analysis for {os.path.basename(dirname)} complete.")
+
+        except Exception as e:
+            print(f"Error during tidal analysis: {e}")
+            if verbose:
+                print("Tidal analysis failed. Ensure 'uptide' is correctly installed and data is suitable.") # Gemini used
+    
 
 
