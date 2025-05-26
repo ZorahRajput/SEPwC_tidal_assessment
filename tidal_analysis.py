@@ -161,9 +161,21 @@ def tidal_analysis(data, constituents, start_datetime):
     return amp, pha
 
 def get_longest_contiguous_data(data):
+    # Assign boolean values to valid and missing data
+    not_na = data['Sea Level'].notna()
+    group_ids = (not_na != not_na.shift()).cumsum()
+    contiguous_lengths = data[not_na].groupby(group_ids[not_na]).size()
+    
+    if data.empty or 'Sea Level' not in data.columns:
+        return pd.DataFrame()   
+    if contiguous_lengths.empty:
+        return pd.DataFrame() 
 
+    # Find largest sequence of valid data
+    longest_group_id = contiguous_lengths.idxmax()
+    longest_data = data[not_na][group_ids[not_na] == longest_group_id]
 
-    return 
+    return longest_data
 
 if __name__ == '__main__':
 
