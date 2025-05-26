@@ -80,10 +80,18 @@ def extract_section_remove_mean(start, end, data):
 
 
 def join_data(data1, data2):
+    if not isinstance(data1, pd.DataFrame) or not isinstance(data2, pd.DataFrame):
+        print(f"Error: Both inputs must be pandas DataFrames for join_data. Got types: {type(data1)}, {type(data2)}")
+        return pd.DataFrame()
 
-    return 
-
-
+    try:
+        combined_data = pd.concat([data1, data2])
+        sorted_data = combined_data.sort_index(ascending=True)
+        return sorted_data
+    
+    except Exception as e:
+        print(f"An error occurred during data joining: {e}")
+        return pd.DataFrame() 
 
 def sea_level_rise(data):
 
