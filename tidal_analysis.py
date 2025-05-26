@@ -66,7 +66,7 @@ def read_tidal_data(tidal_file):
     except ValueError:
         print(f"Error: Data conversion failed in '{tidal_file}'")
         return pd.DataFrame()
- 
+
 def extract_single_year_remove_mean(year, data):
     start_data = pd.to_datetime(f'{year}-01-01 00:00:00')
     end_data = pd.to_datetime(f'{year}-12-31 23:00:00')
@@ -138,7 +138,7 @@ def join_data(data1, data2):
         combined_data = pd.concat([data1, data2])
         sorted_data = combined_data.sort_index(ascending=True)
         return sorted_data
-   
+
     except Exception as e:
         print(f"An error occurred during data joining: {e}")
         return pd.DataFrame()
@@ -292,10 +292,9 @@ if __name__ == '__main__':
         constituents_for_analysis = ['M2', 'S2']
 
         analysis_start_datetime = longest_contiguous_block.index.min()
-       
         try:
             amp, pha = tidal_analysis(longest_contiguous_block, constituents_for_analysis, analysis_start_datetime)
-      
+
             # Print tidal analysis results if verbose is true
             if verbose:
                 print("\nTidal Constituents Amplitudes and Phases:")
@@ -306,4 +305,4 @@ if __name__ == '__main__':
         except Exception as e:
             print(f"Error during tidal analysis: {e}")
             if verbose:
-                print("Tidal analysis failed. Ensure 'uptide' is correctly installed and data is suitable.") # Gemini used  
+                print("Tidal analysis failed. Ensure 'uptide' is correctly installed and data is suitable.") # Gemini used
