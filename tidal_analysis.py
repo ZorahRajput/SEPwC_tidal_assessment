@@ -147,10 +147,6 @@ empty pandas DataFrame, and removes the mean from the data.
         print(f"Error: Invalid date format in {start} or {end}")
         return pd.DataFrame()
 
-    except Exception:
-        print(f"An unexpected error occurred while extracting data from {start} to {end}")
-        return pd.DataFrame()
-
 def join_data(data1, data2):
     """
 Joins data from two specified files and sorts the index chronologically.
@@ -166,8 +162,8 @@ This function handles potential errors by returning an empty pandas DataFrame.
         sorted_data = combined_data.sort_index(ascending=True)
         return sorted_data
 
-    except Exception as e:
-        print(f"An error occurred during data joining: {e}")
+    except ValueError:
+        print(f"Error: Invalid date format in {data1} or {data2}")
         return pd.DataFrame()
 
 def sea_level_rise(data):
@@ -289,9 +285,6 @@ if __name__ == '__main__':
                     print(f"Skipping empty or invalid data from: {file_path}")
         except FileNotFoundError as e:
             print(f"Error: {e}")
-        except Exception as e:
-            if verbose:
-                print(f"An error occurred while processing {file_path}: {e}")
 
     if not all_data_frames:
         print("Error: No valid data could be read from any files in the directory.")
@@ -350,7 +343,7 @@ if __name__ == '__main__':
                     print(f"  {const}: Amplitude={amp[i]:.4f}, Phase={pha[i]:.2f}")
                     print(f"Tidal Analysis for {os.path.basename(dirname)} complete.")
 
-        except Exception as e:
-            print(f"Error during tidal analysis: {e}")
+        except ValueError as e:
+            print(f"Error during tidal analysis (ValueError): {e}")
             if verbose:
-                print(f"Tidal analysis failed. {e}") # Gemini used
+                print(f"Tidal analysis failed due to invalid data or parameters. {e}")
