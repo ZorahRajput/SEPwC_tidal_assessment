@@ -1,5 +1,7 @@
 import pytest
 import sys
+import pytz
+import datetime
 sys.path.insert(0,"../")
 sys.path.insert(0,"./")
 from tidal_analysis import *
