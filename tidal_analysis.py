@@ -149,9 +149,16 @@ def sea_level_rise(data):
     return 
 
 def tidal_analysis(data, constituents, start_datetime):
+    # Convert data into an array
+    tidal_elevations = data['Sea Level'].to_numpy()
+    tide = uptide.Tides(constituents)
 
+    tide.set_initial_time(start_datetime) # Already in UTC
+    seconds_since = (data.index.astype('int64').to_numpy()/1e9) - start_datetime.timestamp()
 
-    return 
+    # Harmonic analysis
+    amp, pha = uptide.harmonic_analysis(tide, tidal_elevations, seconds_since)
+    return amp, pha
 
 def get_longest_contiguous_data(data):
 
