@@ -6,17 +6,12 @@ Created on Mon May  5 14:35:48 2025
 """
 # Import modules
 import argparse
-import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import datetime
-import wget
 import os
+import glob
+import pandas as pd
 import numpy as np
 import uptide
-import pytz
-import math
-import glob
+
 from scipy import stats
 
 def read_tidal_data(tidal_file):
@@ -172,7 +167,7 @@ def sea_level_rise(data):
     y = cleaned_data['Sea Level'].values
 
     # Linear Regression
-    slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+    slope, _, _, p_value, _ = stats.linregress(x, y)
     print(slope, p_value) # Added for debugging
     return slope, p_value
 
